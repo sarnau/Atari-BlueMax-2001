@@ -83,7 +83,7 @@ def readSector(sectorNo, sectorIndex):
 	if True:
 		if status != 0x00:
 			print('$$$ STATUS = $%02x' % status)
-		dump_memory_block(data)
+		#dump_memory_block(data)
 	return data,status
 
 def readBootFile(cpu):
