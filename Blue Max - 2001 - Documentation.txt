@@ -1,0 +1,115 @@
+Protection: $121, $124-$127 (289, 292-295) (bad CRC), $132 (306) (6 duplicates, bad CRC), $17a (378) (deleted)
+
+
+Similar protection:
+	Beach Head (1985)(US Gold)(GB)[m]
+	Pole Position (1984)(US Gold)(GB)
+
+
+Cracked by:
+ - ignore wrong disk status
+ - ignore wrong sector data
+ - put the correct sector 306 in place for 2 of 3 reads (just for fun)
+
+
+Routine in sector $5 at offset $210:
+----------------------------------------------------------
+
+08E1: A9 01             LDA #$01	# sector $1xx
+08E3: 8D 01 03          STA DUNIT
+08E6: 8D 0B 03          STA DAUX2
+08E9: A9 52             LDA #$52
+08EB: 8D 02 03          STA DCOMND
+08EE: A2 00             LDX #$00	# initialize pointer into sector table
+08F0: 8E 04 03          STX DBUFLO
+08F3: A9 06             LDA #$06	# buffer $600
+08F5: 8D 05 03          STA DBUFHI
+08F8: BD 77 09          LDA $0977,X	# next sector number to read (+$100)
+08FB: F0 21             BEQ $091E	# =$00? => protection succeeded. GO AHEAD
+08FD: 8D 0A 03          STA DAUX1
+0900: 8A                TXA		# save pointer
+0901: 48                PHA
+0902: 20 53 E4          JSR DSKINV
+0905: 68                PLA
+0906: AA                TAX		# restore pointer
+0907: 98                TYA		# verify disk status ...
+0908: DD 79 09          CMP $0979,X	# ... against table
+
+090B: D0 0E             BNE $091B	# wrong => read error
+----------------------------------------------------------
+090B: 24 0E             BIT APPMHI	# ignore wrong status
+
+090D: BD 78 09          LDA $0978,X	# verify table ...
+0910: CD 00 06          CMP $0600	# ... against 1st byte of sector
+
+0913: D0 06             BNE $091B	# wrong => read error
+----------------------------------------------------------
+0913: 24 06             BIT TRAMSZ	# ignore wrong sector contents
+
+0915: E8                INX		# next entry in table
+0916: E8                INX
+0917: E8                INX
+0918: 4C F8 08          JMP $08F8	# loop
+
+091B: 4C B0 08          JMP $08B0	# read error (fail)
+
+091E: AD 7F 06          LDA $067F	# go ahead (=$1f)
+0921: 48                PHA
+
+DAUX1 $600 DSTATS
+
+
+Sector verification table: (sector# $1xx, 1st byte, DSTATS)
+----------------------------------------------------------
+
+0977: 21 01 90 22 02 01 23 03 01 24 04 90 25 05 90 26	# sectors $121, $124-$125 bad CRC
+0987: 06 90 27 07 90 29 09 01 2A 0A 01 2B 0B 01 2C 0C	# sectors $126-$127 bad CRC
+0997: 01 32 66 90 2D 0D 01 2E 0E 01 32 66 90 2F 0F 01	# sector $132 bad CRC and duplicate
+09A7: 30 10 01 31 11 01 32 33 90 7A 12 90 00		# sectors $132, $17a bad CRC, $132 duplicate
+
+
+DISKMAP - 40 TRACKS - 18 SECTORS
+
+ 1 *ccccccccc ccccccccc. .ccccccc.* *********c
+ 2 *::::::::: :::::::::. .:::::::.* *********:
+ 3 *::::::::: :::::::::. .:::::::.* *********:
+ 4 *ccccccccc ccccccccc. .ccccccc.* *********c
+ 5 *ccccccccc ccccccccc. .ccccccc.* *********c
+ 6 *ccccccccc ccccccccc. .ccccccc.* *********c
+ 7 .ccccccccc ccccccccc. .ccccccc.* *********c
+ 8 .ccccccccc ccccccccc. .ccccccc** *********c
+ 9 .::::::::: :::::::::. .:::::::** *********:
+10 .::::::::: :::::::::. .:::::::** *********:
+
+11 .::::::::: :::::::::. .:::::::** *********:
+12 .::::::::: :::::::::. .:::::::** *********:
+13 .::::::::: :::::::::. .:::::::** *********:
+14 .::::::::: :::::::::. .:::::::** *********:
+15 .::::::::: :::::::::. .:::::::** *********:
+16 .::::::::: :::::::::. .:::::::** *********:
+17 .::::::::: :::::::::. .:::::::** ********.:
+18 .ccccccccc ccccccccc* dccccccc** ********.c
+
+* OK/DATA  .,;: OK/EMPTY ($00, $1A, $FF, other)
+| MISSING  d DELETED  C BAD CRC  l/L LONG/l+DELETED
+
+
+crack.rup
+NINJA1T
+raw 7fffffff d50af6c8fb6325285ac0a54d374f0ba2 4a75956cb178831be5371023151d315232f75c6e
+221 24
+229 24
+9890 66666666666666666666666666666666d45e
+98b6 abf1
+98b9 a4ab
+98cd 0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e
+
+uncrack.rup
+NINJA1T
+raw 48d3559b 8fc292362a5b2e62658955da64a32801 9c2212f7ec6de9579f278df6f34fad71873a3d98
+221 d0
+229 d0
+9890 555555555555555555555555555555552454
+98b6 bff9
+98b9 b2a1
+98cd 06060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606
