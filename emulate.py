@@ -992,4 +992,4 @@ def emulateAtari(filename,showOutputFlag=False,showROMAccessFlag=False):
 		print('WRITE:')
 		printAddrRanges(mmu.writes)
 
-emulateAtari('Zorro.atx', showOutputFlag=True, showROMAccessFlag=True)
+emulateAtari('Blue Max 2001.atx', showOutputFlag=True, showROMAccessFlag=True)
