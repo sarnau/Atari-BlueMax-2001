@@ -114,7 +114,7 @@ def parseATX(atxFilename):
 								sector_lookup[sl_start_data] = sl_data
 								if not foundDup:
 									print()
-									if False:
+									if True:
 										for l in range(0,SECTOR_SIZE,16):
 											print('%02x: ' % l,end='')
 											for p in range(0,16):

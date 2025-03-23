@@ -83,7 +83,7 @@ def readSector(sectorNo, sectorIndex):
 	if True:
 		if status != 0x00:
 			print('$$$ STATUS = $%02x' % status)
-		#dump_memory_block(data)
+		dump_memory_block(data)
 	return data,status
 
 def readBootFile(cpu):
@@ -800,7 +800,6 @@ def emulateROMfunction(cpu):
 	global showOutput
 	global showROMAccess
 	global sectorIndex
-	global memoryWithSectors
 
 	romCalls = {
 		0xE450:"DISKIV",
@@ -844,19 +843,22 @@ def emulateROMfunction(cpu):
 			if showROMAccess:
 				#print('$$$ CALL SIOV DEVICE:$%02x UNIT:%d CMD:%c STATUS:%02x ADDR:$%04x TIMLO:%d BYTES:$%04x SECTOR:%3d' % (device,unit,chr(command),stats,addr,timlo,byte,sector))
 				print('$$$ READ SECTOR ADDR:$%04x BYTES:$%04x SECTOR:%3d' % (addr,SECTOR_SIZE,sector,))
-			if addr not in memoryWithSectors:
-				memoryWithSectors[addr] = set()
-			memoryWithSectors[addr].add(sector)
-			if sector == 37:
+			if sector == 300: # sector read 306 after this sector
+				sectorIndex = 1
+			elif sector == 305: # sector read 306 after this sector
+				sectorIndex = 10
+			elif sector == 512:
 				sectorIndex = 0
 			sectorData,sectorStatus = readSector(sector, sectorIndex)
-			sectorIndex += 1
 			for r in range(0,SECTOR_SIZE):
 				cpu.mmu.write(addr + r, sectorData[r])
 			if sectorStatus == 0:
 				sectorStatus = 1 # OK status
+			else:
+				sectorStatus = 0x90
 			cpu.mmu.write(0x0303, sectorStatus) # DCB.DSTATS
-			cpu.r.setFlag('N', sectorStatus != 0)
+			cpu.r.y = sectorStatus
+			cpu.r.setFlag('N', sectorStatus != 1)
 			cpu.mmu.write(0x14, 7) # set RTCLOK to satisfy the timing based copy protecting (7-9 are valid for the older protection, 6- for the later ones)
 			cpu.RTS(0)
 		elif romCall == 'CIOV':
@@ -906,7 +908,6 @@ def emulateROMfunction(cpu):
 	showOutput -= 1
 
 sectorIndex = 0
-memoryWithSectors = {}
 def emulateAtari(filename,showOutputFlag=False,showROMAccessFlag=False):
 	global atxDiskImage
 	global showOutput
@@ -936,20 +937,29 @@ def emulateAtari(filename,showOutputFlag=False,showROMAccessFlag=False):
 	rtclokCounter = 0
 	readBootFile(cpu)
 	timeout = datetime.now() + timedelta(seconds=60)
+	showOutput = 1
 	while True:
-		if cpu.r.pc == 0x0c03:
+		if cpu.r.pc == 0x0976:
 			showOutput -= 1
-			f = open('0x0C00.bin','wb')
+			print("DONE")
+			f = open('0x1000.bin','wb')
 			d = bytearray()
-			for adr in range(0x0C00,0x6000):
+			for adr in range(0x1000,0x6E00):
 				d.append(cpu.mmu.read(adr))
 			f.write(d)
 			f.close()
 			break
 
+#		if cpu.r.pc == 0x091E:
+#			showOutput = 0
 		if showOutput == 0:
 			printCPUStatus(cpu)
-			
+
+		# copy protection failure (or read error)			
+		if cpu.r.pc == 0x08B0:
+			print("ERROR")
+			break
+
 		if True:
 			if timeout < datetime.now():
 				print('@@@ TIMEOUT')
@@ -970,26 +980,5 @@ def emulateAtari(filename,showOutputFlag=False,showROMAccessFlag=False):
 			emulateROMfunction(cpu)
 
 		cpu.step()
-
-	# display all memory reads and writes
-	if False:
-		def printAddrRanges(addrSet):
-			lastAddr = None
-			for addr in sorted(addrSet):
-				if lastAddr == None:
-					print('%s' % cpu.mmu.addr_label(addr),end='')
-					lastAddr = addr
-				elif addr == lastAddr + 1:
-					lastAddr = addr
-				else:
-					print('-%s' % cpu.mmu.addr_label(lastAddr))
-					print('%s' % cpu.mmu.addr_label(addr),end='')
-					lastAddr = addr
-			print()
-
-		print('READ:')
-		printAddrRanges(mmu.reads)
-		print('WRITE:')
-		printAddrRanges(mmu.writes)
 
 emulateAtari('Blue Max 2001.atx', showOutputFlag=True, showROMAccessFlag=True)
