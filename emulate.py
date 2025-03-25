@@ -942,11 +942,28 @@ def emulateAtari(filename,showOutputFlag=False,showROMAccessFlag=False):
 		if cpu.r.pc == 0x0976:
 			showOutput -= 1
 			print("DONE")
+			# write binary dump of the game code
 			f = open('0x1000.bin','wb')
-			d = bytearray()
+			data = bytearray()
 			for adr in range(0x1000,0x6E00):
-				d.append(cpu.mmu.read(adr))
-			f.write(d)
+				data.append(cpu.mmu.read(adr))
+			f.write(data)
+			f.close()
+
+			# but also generate a XEX application, which can be double-clicked
+			def writeChunk(baseaddr,mem):
+				endAdr = baseaddr + len(mem) - 1
+				f.write(bytearray([0xFF,0xFF,baseaddr & 0xFF,baseaddr >> 8,endAdr & 0xFF,endAdr >> 8]))
+				f.write(mem)
+			
+			f = open('BlueMax2001.xex', "wb")
+			writeChunk(0x1000, data)
+			
+			# launch the application after loading
+			STARTADR = 0x2000
+			RUNAD = 0x02E0
+			f.write(bytearray([0xFF,0xFF,RUNAD & 0xFF,RUNAD >> 8,(RUNAD + 1) & 0xFF,(RUNAD + 1) >> 8, STARTADR & 0xFF, STARTADR >> 8]))
+			
 			f.close()
 			break
 
